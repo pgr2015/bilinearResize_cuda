@@ -1,6 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <math.h>
-#include <iostream>
+#include <stdio.h>
+#include <chrono>
 
 #include "resize_cpu.hpp"
 
@@ -9,7 +10,7 @@ int main(){
     cv::Mat matSrc, matDst1, matDst2;  
 
     matSrc = cv::imread("test.jpg", 2 | 4);  
-    matDst1 = cv::Mat(cv::Size(800, 800), matSrc.type(), cv::Scalar::all(0));  
+    matDst1 = cv::Mat(cv::Size(960, 540), matSrc.type(), cv::Scalar::all(0));  
     matDst2 = cv::Mat(matDst1.size(), matSrc.type(), cv::Scalar::all(0));  
 
     double scale_x = (double)matSrc.cols / matDst1.cols;  
@@ -21,8 +22,8 @@ int main(){
     int stepSrc = matSrc.step;
     int iWidthSrc = matSrc.cols;
     int iHiehgtSrc = matSrc.rows;
-    std::cout<<"stepDst is "<<stepDst<<std::endl;
-    std::cout<<"stepSrc is "<<stepSrc<<std::endl;
+    clock_t cpu_startTime, cpu_endTime;
+    double cpu_ElapseTime = 0;
 /*
     for (int j = 0; j < matDst1.rows; ++j)
     {
@@ -63,8 +64,8 @@ int main(){
             }
         }
     }
-    */
-   /*
+*/
+/*
     int numberPixel = matDst1.rows*matDst1.cols;
     float x_ratio = float(matSrc.cols)/matDst1.cols;
     float y_ratio = float(matSrc.rows)/matDst1.rows;
@@ -108,10 +109,18 @@ int main(){
 
     }
     */
-    resizeBilinear_cpu(dataSrc, dataDst, matSrc.cols, matSrc.rows, matSrc.channels(), matDst1.cols, matDst1.rows);
+
+
+    cpu_startTime = clock();
+    for(int i=0; i<1000; i++){
+        resizeBilinear_cpu(dataSrc, dataDst, matSrc.cols, matSrc.rows, matSrc.channels(), matDst1.cols, matDst1.rows);
+    }
+    cpu_endTime = clock();
+	cpu_ElapseTime = ((double)(cpu_endTime - cpu_startTime) / (double)CLOCKS_PER_SEC);
+	printf("Time CPU: %f\n", cpu_ElapseTime);
+
 
     cv::imwrite("linear_1.jpg", matDst1);
-    printf("everything is ok!");
     cv::resize(matSrc, matDst2, matDst1.size(), 0, 0, 1);
     cv::imwrite("linear_2.jpg", matDst2);
 }
