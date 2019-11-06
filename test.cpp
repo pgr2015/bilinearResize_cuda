@@ -3,124 +3,67 @@
 #include <stdio.h>
 #include <chrono>
 
-#include "resize_cpu.hpp"
+#include "resize_function.hpp"
+
+#define RESIZE_CALL_NUM 1000
 
 int main(){
 
-    cv::Mat matSrc, matDst1, matDst2;  
+    char testFile[] = "../test1.jpg";
+    cv::Mat matSrc, matDst_cpu, matDst_gpu, matDst2;  
 
-    matSrc = cv::imread("test.jpg", 2 | 4);  
-    matDst1 = cv::Mat(cv::Size(960, 540), matSrc.type(), cv::Scalar::all(0));  
-    matDst2 = cv::Mat(matDst1.size(), matSrc.type(), cv::Scalar::all(0));  
+    matSrc = cv::imread(testFile, 2 | 4);  
+    if(matSrc.empty()){
+        printf("can't read image %s", testFile);
+        exit(1);
+    }
+    matDst_cpu = cv::Mat(cv::Size(1856, 960), matSrc.type(), cv::Scalar::all(0));  
+    matDst_gpu = cv::Mat(cv::Size(1856, 960), matSrc.type(), cv::Scalar::all(0));  
+    matDst2 = cv::Mat(matDst_cpu.size(), matSrc.type(), cv::Scalar::all(0));  
 
-    double scale_x = (double)matSrc.cols / matDst1.cols;  
-    double scale_y = (double)matSrc.rows / matDst1.rows;  
+    double scale_x = (double)matSrc.cols / matDst_cpu.cols;  
+    double scale_y = (double)matSrc.rows / matDst_cpu.rows;  
 
-    uchar* dataDst = matDst1.data;
-    int stepDst = matDst1.step;
+    uchar* dataDst = matDst_cpu.data;
+    int stepDst = matDst_cpu.step;
     uchar* dataSrc = matSrc.data;
     int stepSrc = matSrc.step;
     int iWidthSrc = matSrc.cols;
     int iHiehgtSrc = matSrc.rows;
     clock_t cpu_startTime, cpu_endTime;
     double cpu_ElapseTime = 0;
-/*
-    for (int j = 0; j < matDst1.rows; ++j)
-    {
-        float fy = (float)((j + 0.5) * scale_y - 0.5);
-        int sy = cvFloor(fy);
-        fy -= sy;
-        sy = std::min(sy, iHiehgtSrc - 2);
-        sy = std::max(0, sy);
-
-        short cbufy[2];
-        //cbufy[0] = cv::saturate_cast<short>((1.f - fy) * 2048);
-        cbufy[0] = (1.f - fy) * 2048;
-        cbufy[1] = 2048 - cbufy[0];
-
-        for (int i = 0; i < matDst1.cols; ++i)
-        {
-            float fx = (float)((i + 0.5) * scale_x - 0.5);
-            int sx = cvFloor(fx);
-            fx -= sx;
-
-            if (sx < 0) {
-                fx = 0, sx = 0;
-            }
-            if (sx >= iWidthSrc - 1) {
-                fx = 0, sx = iWidthSrc - 2;
-            }
-
-            short cbufx[2];
-            cbufx[0] = (1.f - fx) * 2048;
-            cbufx[1] = 2048 - cbufx[0];
-
-            for (int k = 0; k < matSrc.channels(); ++k)
-            {
-                *(dataDst+ j*matDst1.cols*matDst1.channels() + 3*i + k) = (*(dataSrc + sy*stepSrc + 3*sx + k) * cbufx[0] * cbufy[0] + 
-                    *(dataSrc + (sy+1)*stepSrc + 3*sx + k) * cbufx[0] * cbufy[1] + 
-                    *(dataSrc + sy*stepSrc + 3*(sx+1) + k) * cbufx[1] * cbufy[0] + 
-                    *(dataSrc + (sy+1)*stepSrc + 3*(sx+1) + k) * cbufx[1] * cbufy[1]) >> 22;
-            }
-        }
-    }
-*/
-/*
-    int numberPixel = matDst1.rows*matDst1.cols;
-    float x_ratio = float(matSrc.cols)/matDst1.cols;
-    float y_ratio = float(matSrc.rows)/matDst1.rows;
-    for(int i=0; i<numberPixel; i++){
-        int xx = i/matDst1.cols;
-        int yy = i%matDst1.rows;
-
-        float fx = (float(xx) + 0.5) * x_ratio - 0.5;
-        float fy = (float(yy) + 0.5) * y_ratio - 0.5;
-
-        int ix = floor(fx);
-        int iy = floor(fy);
-
-        fy -= iy;
-        iy = std::min(iy, iHiehgtSrc - 1);
-        iy = std::max(0, iy);
-
-        fx -= ix;
-        if (ix < 0) {
-            fx = 0, ix = 0;
-        }
-        if (ix > iWidthSrc - 1) {
-            fx = 0, ix = iWidthSrc - 1;
-        }
-
-        short cbufx[2];
-        cbufx[0] = (1.f - fx) * 2048;
-        cbufx[1] = 2048 - cbufx[0];
-
-        short cbufy[2];
-        cbufy[0] = (1.f - fy) * 2048;
-        cbufy[1] = 2048 - cbufy[0];
-
-        for (int k = 0; k < matSrc.channels(); ++k)
-        {
-            *(dataDst+ yy*matDst1.cols*matDst1.channels() + 3*xx + k) = (*(dataSrc + iy*stepSrc + 3*ix + k) * cbufx[0] * cbufy[0] + 
-                *(dataSrc + (iy+1)*stepSrc + 3*ix + k) * cbufx[0] * cbufy[1] + 
-                *(dataSrc + iy*stepSrc + 3*(ix+1) + k) * cbufx[1] * cbufy[0] + 
-                *(dataSrc + (iy+1)*stepSrc + 3*(ix+1) + k) * cbufx[1] * cbufy[1]) >> 22;
-        }
-
-    }
-    */
-
-
     cpu_startTime = clock();
-    for(int i=0; i<1000; i++){
-        resizeBilinear_cpu(dataSrc, dataDst, matSrc.cols, matSrc.rows, matSrc.channels(), matDst1.cols, matDst1.rows);
+    for(int i=0; i<RESIZE_CALL_NUM; i++){
+        resizeBilinear_cpu(dataSrc, dataDst, matSrc.cols, matSrc.rows, matSrc.channels(), matDst_cpu.cols, matDst_cpu.rows);
     }
     cpu_endTime = clock();
 	cpu_ElapseTime = ((double)(cpu_endTime - cpu_startTime) / (double)CLOCKS_PER_SEC);
 	printf("Time CPU: %f\n", cpu_ElapseTime);
+    cv::imwrite("test_cpu.jpg", matDst_cpu);
+    printf("sizeof(uchar) is %d\n",sizeof(uchar));
 
+    // gpu version
+    uchar* dataGpu = NULL;
+    unsigned int lengthSrc= matSrc.cols* matSrc.rows* matSrc.channels() * sizeof(uchar);
+    unsigned int lengthResize= matDst_gpu.cols* matDst_gpu.rows* matDst_gpu.channels() * sizeof(uchar);
+    reAllocPinned(lengthSrc, lengthResize, dataSrc); //allocate pinned host memory for fast cuda memcpy 
 
-    cv::imwrite("linear_1.jpg", matDst1);
-    cv::resize(matSrc, matDst2, matDst1.size(), 0, 0, 1);
-    cv::imwrite("linear_2.jpg", matDst2);
+	initGPU(1856, 960, 3);
+	dataGpu = resizeBilinear_gpu(matSrc.cols, matSrc.rows, matSrc.channels(), matDst2.cols, matDst2.rows); //init device
+	cpu_startTime = clock();
+	for (int i = 0; i < RESIZE_CALL_NUM; i++)
+	{
+		dataGpu = resizeBilinear_gpu(matSrc.cols, matSrc.rows, matSrc.channels(), matDst2.cols, matDst2.rows);
+	}
+	cpu_endTime = clock();
+	cpu_ElapseTime = ((double)(cpu_endTime - cpu_startTime) / (double)CLOCKS_PER_SEC);
+	printf("Time GPU: %f\n", cpu_ElapseTime);
+    memcpy(matDst_gpu.data, dataGpu,lengthResize);
+	deinitGPU();
+    freePinned();
+	//gpu block end
+
+    cv::resize(matSrc, matDst2, matDst_cpu.size(), 0, 0, 1);
+    cv::imwrite("test_gpu.jpg", matDst_gpu);
+    cv::imwrite("linear_opencv.jpg", matDst2);
 }

@@ -1,4 +1,4 @@
-#include "resize_cpu.hpp"
+#include "resize_function.hpp"
 
 void resizeBilinear_cpu(uchar* src, uchar* out, int w, int h, int c, int w2, int h2){
     int numberPixel = w2*h2;
@@ -17,17 +17,25 @@ void resizeBilinear_cpu(uchar* src, uchar* out, int w, int h, int c, int w2, int
         int iy = floor(fy);
 
         fy -= iy;
-        iy = std::min(iy, h - 1);
+        if (iy < 0) {
+            fy = 0, iy = 0;
+        }
+        if (iy > w - 2) {
+            fy = 0, iy = w - 2;
+        }
+        /*
+        iy = std::min(iy, h - 2);
         iy = std::max(0, iy);
-
+        */
+        
         fx -= ix;
         if (ix < 0) {
             fx = 0, ix = 0;
         }
-        if (ix > w - 1) {
-            fx = 0, ix = w - 1;
+        if (ix > w - 2) {
+            fx = 0, ix = w - 2;
         }
-
+                
         short cbufx[2];
         cbufx[0] = (1.f - fx) * 2048;
         cbufx[1] = 2048 - cbufx[0];
