@@ -10,8 +10,8 @@ usage:
   $ ./example
 
 input:  
-  test.jpg 464*240*3  
+  test.jpg 464&#215;240&#215;3  
 output:  
-  test_cpu.jpg 1856*960*3 (107.138715 ms)  
-  test_gpu.jpg 1856*960*3 (1.887202 ms)  
-  test_opencv.jpg 1856*960*3 (7.711177 ms)  
+  test_cpu.jpg resolution: 1856&#215;960&#215;3 run time: 107.138715 ms  
+  test_gpu.jpg resolution: 1856&#215;960&#215;3 run time: 1.887202 ms  
+  test_opencv.jpg resolution: 1856&#215;960&#215;3 run time: 7.711177 ms  
