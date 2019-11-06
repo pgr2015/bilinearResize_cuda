@@ -8,4 +8,10 @@ usage:
   $ mkdir build && cd build  
   $ cmake .. && make  
   $ ./example
-  
+
+input:  
+  test.jpg 464*240*3
+output:  
+  test_cpu.jpg 1856*960*3 (107.138715 ms)  
+  test_gpu.jpg 1856*960*3 (1.887202 ms)  
+  test_opencv.jpg 1856*960*3 (7.711177 ms)  
